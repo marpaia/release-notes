@@ -61,6 +61,9 @@ type ReleaseNote struct {
 	// SIGs is a list of the labels beginning with sig/
 	SIGs []string `json:"sigs,omitempty"`
 
+	// Indicates whether or not a note will appear as a new feature
+	Feature bool `json:"feature,omitempty"`
+
 	// ActionRequired indicates whether or not the release-note-action-required
 	// label was set on the PR
 	ActionRequired bool `json:"action_required,omitempty"`
@@ -175,7 +178,17 @@ func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Clien
 	author := pr.GetUser().GetLogin()
 	authorUrl := fmt.Sprintf("https://github.com/%s", author)
 	prUrl := fmt.Sprintf("https://github.com/kubernetes/kubernetes/pull/%d", pr.GetNumber())
-	markdown := fmt.Sprintf("%s ([#%d](%s), [@%s](%s))", text, pr.GetNumber(), prUrl, author, authorUrl)
+	clause := ""
+	labels := ""
+	IsFeature := HasString(LabelsWithPrefix(pr, "kind"), "feature")
+	if IsActionRequired(pr) || IsFeature {
+		clause = "Courtesy of: "
+		labels = strings.Join(LabelsWithPrefix(pr, "sig"), ", ")
+	} else if len(LabelsWithPrefix(pr, "sig")) > 1 {
+		clause = "<DUPLICATE> KEEP | REMOVE ? appears in: "
+		labels = strings.Join(LabelsWithPrefix(pr, "sig"), ", ")
+	}
+	markdown := fmt.Sprintf("%s ([#%d](%s), [@%s](%s)) %s%s", text, pr.GetNumber(), prUrl, author, authorUrl, clause, labels)
 
 	return &ReleaseNote{
 		Commit:         commit.GetSHA(),
@@ -188,6 +201,7 @@ func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Clien
 		SIGs:           LabelsWithPrefix(pr, "sig"),
 		Kinds:          LabelsWithPrefix(pr, "kind"),
 		Areas:          LabelsWithPrefix(pr, "area"),
+		Feature:        IsFeature,
 		ActionRequired: IsActionRequired(pr),
 	}, nil
 }
@@ -431,4 +445,13 @@ func stripActionRequired(note string) string {
 func stripStar(note string) string {
 	re := regexp.MustCompile(`(?i)\*\s`)
 	return re.ReplaceAllString(note, "")
+}
+
+func HasString(a []string, x string) bool {
+	for _, n := range a {
+		if x == n {
+			return true
+		}
+	}
+	return false
 }
