@@ -178,17 +178,40 @@ func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Clien
 	author := pr.GetUser().GetLogin()
 	authorUrl := fmt.Sprintf("https://github.com/%s", author)
 	prUrl := fmt.Sprintf("https://github.com/kubernetes/kubernetes/pull/%d", pr.GetNumber())
-	clause := ""
-	labels := ""
 	IsFeature := HasString(LabelsWithPrefix(pr, "kind"), "feature")
-	if IsActionRequired(pr) || IsFeature {
-		clause = "Courtesy of: "
-		labels = strings.Join(LabelsWithPrefix(pr, "sig"), ", ")
-	} else if len(LabelsWithPrefix(pr, "sig")) > 1 {
-		clause = "<DUPLICATE> KEEP | REMOVE ? appears in: "
-		labels = strings.Join(LabelsWithPrefix(pr, "sig"), ", ")
+	sigsListPretty := ""
+	noteSuffix := ""
+
+	sigLabels := LabelsWithPrefix(pr, "sig")
+	sigs := make([]string, len(sigLabels))
+	for i, sig := range LabelsWithPrefix(pr, "sig") {
+		sigs[i] = fmt.Sprintf("SIG %s", prettySIG(sig))
+
+		if i == 0 {
+			sigsListPretty = fmt.Sprintf("SIG %s", prettySIG(sig))
+		} else if i == (len(sigLabels) - 1) {
+			sigsListPretty = fmt.Sprintf("%s, and SIG %s", sigsListPretty, prettySIG(sig))
+		} else {
+			sigsListPretty = fmt.Sprintf("%s, SIG %s", sigsListPretty, prettySIG(sig))
+		}
 	}
-	markdown := fmt.Sprintf("%s ([#%d](%s), [@%s](%s)) %s%s", text, pr.GetNumber(), prUrl, author, authorUrl, clause, labels)
+
+	if IsActionRequired(pr) || IsFeature {
+		if sigsListPretty != "" {
+			noteSuffix = fmt.Sprintf("Courtesy of %s", sigsListPretty)
+
+		}
+	} else if len(LabelsWithPrefix(pr, "sig")) > 1 {
+		if sigsListPretty != "" {
+			noteSuffix = fmt.Sprintf("<DUPLICATE> KEEP | REMOVE ? also appears in: %s", sigsListPretty)
+
+		}
+	}
+	markdown := fmt.Sprintf("%s ([#%d](%s), [@%s](%s))", text, pr.GetNumber(), prUrl, author, authorUrl)
+
+	if noteSuffix != "" {
+		markdown = fmt.Sprintf("%s %s", markdown, noteSuffix)
+	}
 
 	return &ReleaseNote{
 		Commit:         commit.GetSHA(),
