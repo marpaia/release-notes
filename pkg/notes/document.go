@@ -34,18 +34,21 @@ func CreateDocument(notes []*ReleaseNote) (*Document, error) {
 		if note.ActionRequired {
 			categorized = true
 			doc.ActionRequired = append(doc.ActionRequired, note.Markdown)
-		}
-
-		for _, sig := range note.SIGs {
+		} else if note.Feature {
 			categorized = true
-			notesForSIG, ok := doc.SIGs[sig]
-			if ok {
-				doc.SIGs[sig] = append(notesForSIG, note.Markdown)
-			} else {
-				doc.SIGs[sig] = []string{note.Markdown}
+			doc.NewFeatures = append(doc.NewFeatures, note.Markdown)
+
+		} else {
+			for _, sig := range note.SIGs {
+				categorized = true
+				notesForSIG, ok := doc.SIGs[sig]
+				if ok {
+					doc.SIGs[sig] = append(notesForSIG, note.Markdown)
+				} else {
+					doc.SIGs[sig] = []string{note.Markdown}
+				}
 			}
 		}
-
 		isBug := false
 		for _, kind := range note.Kinds {
 			switch kind {
@@ -55,8 +58,7 @@ func CreateDocument(notes []*ReleaseNote) (*Document, error) {
 				// kinds and determined that it has no other categorization label.
 				isBug = true
 			case "feature":
-				categorized = true
-				doc.NewFeatures = append(doc.NewFeatures, note.Markdown)
+				continue
 			case "api-change", "new-api":
 				categorized = true
 				doc.APIChanges = append(doc.APIChanges, note.Markdown)
