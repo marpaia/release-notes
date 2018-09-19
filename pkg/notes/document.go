@@ -48,34 +48,33 @@ func CreateDocument(notes []*ReleaseNote) (*Document, error) {
 					doc.SIGs[sig] = []string{note.Markdown}
 				}
 			}
-		}
-		isBug := false
-		for _, kind := range note.Kinds {
-			switch kind {
-			case "bug":
-				// if the PR has kind/bug, we want to make a note of it, but we don't
-				// include it in the Bug Fixes section until we haven't processed all
-				// kinds and determined that it has no other categorization label.
-				isBug = true
-			case "feature":
-				continue
-			case "api-change", "new-api":
-				categorized = true
-				doc.APIChanges = append(doc.APIChanges, note.Markdown)
+			isBug := false
+			for _, kind := range note.Kinds {
+				switch kind {
+				case "bug":
+					// if the PR has kind/bug, we want to make a note of it, but we don't
+					// include it in the Bug Fixes section until we haven't processed all
+					// kinds and determined that it has no other categorization label.
+					isBug = true
+				case "feature":
+					continue
+				case "api-change", "new-api":
+					categorized = true
+					doc.APIChanges = append(doc.APIChanges, note.Markdown)
+				}
 			}
-		}
 
-		// if the note has not been categorized so far, we can toss in one of two
-		// buckets
-		if !categorized {
-			if isBug {
-				doc.BugFixes = append(doc.BugFixes, note.Markdown)
-			} else {
-				doc.Uncategorized = append(doc.Uncategorized, note.Markdown)
+			// if the note has not been categorized so far, we can toss in one of two
+			// buckets
+			if !categorized {
+				if isBug {
+					doc.BugFixes = append(doc.BugFixes, note.Markdown)
+				} else {
+					doc.Uncategorized = append(doc.Uncategorized, note.Markdown)
+				}
 			}
 		}
 	}
-
 	return doc, nil
 }
 
