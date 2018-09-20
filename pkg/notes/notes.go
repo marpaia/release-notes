@@ -183,34 +183,15 @@ func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Clien
 	prUrl := fmt.Sprintf("https://github.com/kubernetes/kubernetes/pull/%d", pr.GetNumber())
 	IsFeature := HasString(LabelsWithPrefix(pr, "kind"), "feature")
 	IsDuplicate := false
-	sigsListPretty := ""
+	sigsListPretty := prettifySigList(LabelsWithPrefix(pr, "sig"))
 	noteSuffix := ""
-
-	sigLabels := LabelsWithPrefix(pr, "sig")
-	sigs := make([]string, len(sigLabels))
-	for i, sig := range LabelsWithPrefix(pr, "sig") {
-		sigs[i] = fmt.Sprintf("SIG %s", prettySIG(sig))
-
-		if i == 0 {
-			sigsListPretty = fmt.Sprintf("SIG %s", prettySIG(sig))
-		} else if i == (len(sigLabels) - 1) {
-			sigsListPretty = fmt.Sprintf("%s, and SIG %s", sigsListPretty, prettySIG(sig))
-		} else {
-			sigsListPretty = fmt.Sprintf("%s, SIG %s", sigsListPretty, prettySIG(sig))
-		}
-	}
 
 	if IsActionRequired(pr) || IsFeature {
 		if sigsListPretty != "" {
 			noteSuffix = fmt.Sprintf("Courtesy of %s", sigsListPretty)
-
 		}
 	} else if len(LabelsWithPrefix(pr, "sig")) > 1 {
-		if sigsListPretty != "" {
-			noteSuffix = fmt.Sprintf("<DUPLICATED> Appears in: %s", sigsListPretty)
-			IsDuplicate = true
-
-		}
+		IsDuplicate = true
 	}
 	markdown := fmt.Sprintf("%s ([#%d](%s), [@%s](%s))", text, pr.GetNumber(), prUrl, author, authorUrl)
 
