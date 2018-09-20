@@ -8,6 +8,7 @@ import (
 
 // Document represents the underlying structure of a release notes document.
 type Document struct {
+	Duplicates     []string            `json:"duplicate_notes"`
 	NewFeatures    []string            `json:"new_features"`
 	ActionRequired []string            `json:"action_required"`
 	APIChanges     []string            `json:"api_changes"`
@@ -20,6 +21,7 @@ type Document struct {
 // release notes
 func CreateDocument(notes []*ReleaseNote) (*Document, error) {
 	doc := &Document{
+		Duplicates:     []string{},
 		NewFeatures:    []string{},
 		ActionRequired: []string{},
 		APIChanges:     []string{},
@@ -37,7 +39,9 @@ func CreateDocument(notes []*ReleaseNote) (*Document, error) {
 		} else if note.Feature {
 			categorized = true
 			doc.NewFeatures = append(doc.NewFeatures, note.Markdown)
-
+		} else if note.Duplicate {
+			categorized = true
+			doc.Duplicates = append(doc.Duplicates, note.Markdown)
 		} else {
 			for _, sig := range note.SIGs {
 				categorized = true
@@ -48,34 +52,33 @@ func CreateDocument(notes []*ReleaseNote) (*Document, error) {
 					doc.SIGs[sig] = []string{note.Markdown}
 				}
 			}
-		}
-		isBug := false
-		for _, kind := range note.Kinds {
-			switch kind {
-			case "bug":
-				// if the PR has kind/bug, we want to make a note of it, but we don't
-				// include it in the Bug Fixes section until we haven't processed all
-				// kinds and determined that it has no other categorization label.
-				isBug = true
-			case "feature":
-				continue
-			case "api-change", "new-api":
-				categorized = true
-				doc.APIChanges = append(doc.APIChanges, note.Markdown)
+			isBug := false
+			for _, kind := range note.Kinds {
+				switch kind {
+				case "bug":
+					// if the PR has kind/bug, we want to make a note of it, but we don't
+					// include it in the Bug Fixes section until we haven't processed all
+					// kinds and determined that it has no other categorization label.
+					isBug = true
+				case "feature":
+					continue
+				case "api-change", "new-api":
+					categorized = true
+					doc.APIChanges = append(doc.APIChanges, note.Markdown)
+				}
 			}
-		}
 
-		// if the note has not been categorized so far, we can toss in one of two
-		// buckets
-		if !categorized {
-			if isBug {
-				doc.BugFixes = append(doc.BugFixes, note.Markdown)
-			} else {
-				doc.Uncategorized = append(doc.Uncategorized, note.Markdown)
+			// if the note has not been categorized so far, we can toss in one of two
+			// buckets
+			if !categorized {
+				if isBug {
+					doc.BugFixes = append(doc.BugFixes, note.Markdown)
+				} else {
+					doc.Uncategorized = append(doc.Uncategorized, note.Markdown)
+				}
 			}
 		}
 	}
-
 	return doc, nil
 }
 
@@ -111,6 +114,15 @@ func RenderMarkdown(doc *Document, w io.Writer) error {
 			s = "- " + s
 		}
 		write(s + "\n")
+	}
+
+	// the "Duplicate Notes" section
+	if len(doc.Duplicates) > 0 {
+		write("## Duplicated Notes\n\n")
+		for _, note := range doc.Duplicates {
+			writeNote(note)
+		}
+		write("\n\n")
 	}
 
 	// the "Action Required" section

@@ -64,6 +64,9 @@ type ReleaseNote struct {
 	// Indicates whether or not a note will appear as a new feature
 	Feature bool `json:"feature,omitempty"`
 
+	// Indicates whether or not a note is duplicated across SIGs
+	Duplicate bool `json:"duplicate,omitempty"`
+
 	// ActionRequired indicates whether or not the release-note-action-required
 	// label was set on the PR
 	ActionRequired bool `json:"action_required,omitempty"`
@@ -179,6 +182,7 @@ func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Clien
 	authorUrl := fmt.Sprintf("https://github.com/%s", author)
 	prUrl := fmt.Sprintf("https://github.com/kubernetes/kubernetes/pull/%d", pr.GetNumber())
 	IsFeature := HasString(LabelsWithPrefix(pr, "kind"), "feature")
+	IsDuplicate := false
 	sigsListPretty := ""
 	noteSuffix := ""
 
@@ -203,7 +207,8 @@ func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Clien
 		}
 	} else if len(LabelsWithPrefix(pr, "sig")) > 1 {
 		if sigsListPretty != "" {
-			noteSuffix = fmt.Sprintf("<DUPLICATE> KEEP | REMOVE ? also appears in: %s", sigsListPretty)
+			noteSuffix = fmt.Sprintf("<DUPLICATED> Appears in: %s", sigsListPretty)
+			IsDuplicate = true
 
 		}
 	}
@@ -225,6 +230,7 @@ func ReleaseNoteFromCommit(commit *github.RepositoryCommit, client *github.Clien
 		Kinds:          LabelsWithPrefix(pr, "kind"),
 		Areas:          LabelsWithPrefix(pr, "area"),
 		Feature:        IsFeature,
+		Duplicate:      IsDuplicate,
 		ActionRequired: IsActionRequired(pr),
 	}, nil
 }
