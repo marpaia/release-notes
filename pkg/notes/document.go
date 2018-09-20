@@ -8,6 +8,7 @@ import (
 
 // Document represents the underlying structure of a release notes document.
 type Document struct {
+	Duplicates     []string            `json:"duplicate_notes"`
 	NewFeatures    []string            `json:"new_features"`
 	ActionRequired []string            `json:"action_required"`
 	APIChanges     []string            `json:"api_changes"`
@@ -20,6 +21,7 @@ type Document struct {
 // release notes
 func CreateDocument(notes []*ReleaseNote) (*Document, error) {
 	doc := &Document{
+		Duplicates:     []string{},
 		NewFeatures:    []string{},
 		ActionRequired: []string{},
 		APIChanges:     []string{},
@@ -37,7 +39,9 @@ func CreateDocument(notes []*ReleaseNote) (*Document, error) {
 		} else if note.Feature {
 			categorized = true
 			doc.NewFeatures = append(doc.NewFeatures, note.Markdown)
-
+		} else if note.Duplicate {
+			categorized = true
+			doc.Duplicates = append(doc.Duplicates, note.Markdown)
 		} else {
 			for _, sig := range note.SIGs {
 				categorized = true
@@ -110,6 +114,15 @@ func RenderMarkdown(doc *Document, w io.Writer) error {
 			s = "- " + s
 		}
 		write(s + "\n")
+	}
+
+	// the "Duplicate Notes" section
+	if len(doc.Duplicates) > 0 {
+		write("## Duplicated Notes\n\n")
+		for _, note := range doc.Duplicates {
+			writeNote(note)
+		}
+		write("\n\n")
 	}
 
 	// the "Action Required" section
