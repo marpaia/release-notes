@@ -1,6 +1,7 @@
 package notes
 
 import (
+	"fmt"
 	"io"
 	"sort"
 	"strings"
@@ -8,10 +9,10 @@ import (
 
 // Document represents the underlying structure of a release notes document.
 type Document struct {
-	Duplicates     []string            `json:"duplicate_notes"`
 	NewFeatures    []string            `json:"new_features"`
 	ActionRequired []string            `json:"action_required"`
 	APIChanges     []string            `json:"api_changes"`
+	Duplicates     map[string][]string `json:"duplicate_notes"`
 	SIGs           map[string][]string `json:"sigs"`
 	BugFixes       []string            `json:"bug_fixes"`
 	Uncategorized  []string            `json:"uncategorized"`
@@ -21,10 +22,10 @@ type Document struct {
 // release notes
 func CreateDocument(notes []*ReleaseNote) (*Document, error) {
 	doc := &Document{
-		Duplicates:     []string{},
 		NewFeatures:    []string{},
 		ActionRequired: []string{},
 		APIChanges:     []string{},
+		Duplicates:     map[string][]string{},
 		SIGs:           map[string][]string{},
 		BugFixes:       []string{},
 		Uncategorized:  []string{},
@@ -41,7 +42,13 @@ func CreateDocument(notes []*ReleaseNote) (*Document, error) {
 			doc.NewFeatures = append(doc.NewFeatures, note.Markdown)
 		} else if note.Duplicate {
 			categorized = true
-			doc.Duplicates = append(doc.Duplicates, note.Markdown)
+			header := prettifySigList(note.SIGs)
+			existingNotes, ok := doc.Duplicates[header]
+			if ok {
+				doc.Duplicates[header] = append(existingNotes, note.Markdown)
+			} else {
+				doc.Duplicates[header] = []string{note.Markdown}
+			}
 		} else {
 			for _, sig := range note.SIGs {
 				categorized = true
@@ -116,15 +123,6 @@ func RenderMarkdown(doc *Document, w io.Writer) error {
 		write(s + "\n")
 	}
 
-	// the "Duplicate Notes" section
-	if len(doc.Duplicates) > 0 {
-		write("## Duplicated Notes\n\n")
-		for _, note := range doc.Duplicates {
-			writeNote(note)
-		}
-		write("\n\n")
-	}
-
 	// the "Action Required" section
 	if len(doc.ActionRequired) > 0 {
 		write("## Action Required\n\n")
@@ -152,11 +150,28 @@ func RenderMarkdown(doc *Document, w io.Writer) error {
 		write("\n\n")
 	}
 
+	// the "Duplicate Notes" section
+	if len(doc.Duplicates) > 0 {
+		write("## Notes From Multiple SIGs\n\n")
+		for header, notes := range doc.Duplicates {
+			write(fmt.Sprintf("### %s\n\n", header))
+			for _, note := range notes {
+				writeNote(note)
+			}
+			write("\n")
+		}
+		write("\n")
+	}
+
 	// each SIG gets a section (in alphabetical order)
-	for _, sig := range sortedSIGs {
-		write("## SIG " + prettySIG(sig) + "\n\n")
-		for _, note := range doc.SIGs[sig] {
-			writeNote(note)
+	if len(sortedSIGs) > 0 {
+		write("## Notes from Individual SIGs\n\n")
+		for _, sig := range sortedSIGs {
+			write("### SIG " + prettySIG(sig) + "\n\n")
+			for _, note := range doc.SIGs[sig] {
+				writeNote(note)
+			}
+			write("\n")
 		}
 		write("\n\n")
 	}
@@ -202,4 +217,24 @@ func prettySIG(sig string) string {
 		}
 	}
 	return strings.Join(parts, " ")
+}
+
+func prettifySigList(sigs []string) string {
+	sigList := ""
+
+	// sort the list so that any group of SIGs with the same content gives us the
+	// same result
+	sort.Strings(sigs)
+
+	for i, sig := range sigs {
+		if i == 0 {
+			sigList = fmt.Sprintf("SIG %s", prettySIG(sig))
+		} else if i == (len(sigs) - 1) {
+			sigList = fmt.Sprintf("%s, and SIG %s", sigList, prettySIG(sig))
+		} else {
+			sigList = fmt.Sprintf("%s, SIG %s", sigList, prettySIG(sig))
+		}
+	}
+
+	return sigList
 }
