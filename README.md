@@ -46,6 +46,21 @@ You can also generate the raw notes data into JSON. You can then use a variety o
 ]
 ```
 
+Helpers also exist in the Makefile to assist in the generation of well-known commit ranges. For example:
+
+```
+$ make 1.13
+
+[+] fetching the latest commit information...
+[+] generating notes
+./release-notes \
+		-start-sha="ad58349f7455a9ae8bb633e93ba0902a5cd6bc65" \
+		-end-sha="3abb9f0ad7fd27a52679e395e73a62bebefea6fe"
+level=info msg="fetching all commits. this might take a while..."
+level=info msg="got the commits, performing rendering"
+level=info msg="release notes written to file" path=/var/folders/wp/6fkmvjf11gv18tdprv4g2mk40000gn/T/release-notes-798948795 format=markdown
+```
+
 ## Building From Source
 
 To build the `release-notes` tool, check out this repo to your `$GOPATH`:
@@ -57,14 +72,13 @@ git clone git@github.com:marpaia/release-notes.git $GOPATH/src/github.com/marpai
 Run the following from the root of the repository to install dependencies:
 
 ```
-go get -u github.com/golang/dep/cmd/dep
-dep ensure -vendor-only
+make deps
 ```
 
 Run the following from the root of the repository to build the `release-notes` binary:
 
 ```
-go build ./cmd/release-notes
+make build
 ```
 
 Use the `-h` flag for help:
