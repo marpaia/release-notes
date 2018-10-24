@@ -4,13 +4,15 @@ import (
 	"os"
 	"testing"
 
+	"github.com/kolide/kit/logutil"
 	"github.com/stretchr/testify/require"
 )
 
 func TestDocument(t *testing.T) {
 	client := githubClient(t)
+	logger := logutil.NewCLILogger(true)
 
-	notes, err := ListReleaseNotes(client, v1_11_0, "e92ea04edb286efe76caa86183fc00850a936f74")
+	notes, err := ListReleaseNotes(client, logger, v1_11_0, "e92ea04edb286efe76caa86183fc00850a936f74")
 	require.NoError(t, err)
 	require.Len(t, notes, 14)
 

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/go-github/github"
+	"github.com/kolide/kit/logutil"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
@@ -50,6 +51,7 @@ func TestConfigFromOpts(t *testing.T) {
 
 func TestGitHubAPIOperations(t *testing.T) {
 	client := githubClient(t)
+	logger := logutil.NewCLILogger(true)
 
 	// there were 48 commits between v1.11.0-rc3 and v1.11.0
 	commits, err := ListCommits(client, v1_11_0_rc3, v1_11_0)
@@ -57,7 +59,7 @@ func TestGitHubAPIOperations(t *testing.T) {
 	require.Len(t, commits, 55)
 
 	// there were 4 commits with release notes between v1.11.0-rc3 and v1.11.0
-	commits, err = ListCommitsWithNotes(client, v1_11_0_rc3, v1_11_0)
+	commits, err = ListCommitsWithNotes(client, logger, v1_11_0_rc3, v1_11_0)
 	require.NoError(t, err)
 	require.Len(t, commits, 4)
 
