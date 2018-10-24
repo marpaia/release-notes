@@ -2,15 +2,15 @@
 
 
 [[projects]]
-  digest = "1:a2c1d0e43bd3baaa071d1b9ed72c27d78169b2b269f71c105ac4ba34b1be4a39"
+  digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   pruneopts = "UT"
-  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
-  version = "v1.1.0"
+  revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
+  version = "v1.1.1"
 
 [[projects]]
-  digest = "1:b53962d15364047cf1c18369a7bdf30571760625c34bec08f217edbc3a8f9040"
+  digest = "1:db2e37856e0f3e8ad322792ca2ede9bcf821f4d482ca0ef300e6a9d85776a99a"
   name = "github.com/go-kit/kit"
   packages = [
     "log",
@@ -29,44 +29,44 @@
   version = "v0.3.0"
 
 [[projects]]
-  digest = "1:c4a2528ccbcabf90f9f3c464a5fc9e302d592861bbfd0b7135a7de8a943d0406"
+  digest = "1:586ea76dbd0374d6fb649a91d70d652b7fe0ccffb8910a77468e7702e7901f3d"
   name = "github.com/go-stack/stack"
   packages = ["."]
   pruneopts = "UT"
-  revision = "259ab82a6cad3992b4e21ff5cac294ccb06474bc"
-  version = "v1.7.0"
+  revision = "2fee6af1a9795aafbe0253a0cfbdf668e1fb8a9a"
+  version = "v1.8.0"
 
 [[projects]]
-  digest = "1:15042ad3498153684d09f393bbaec6b216c8eec6d61f63dff711de7d64ed8861"
+  digest = "1:97df918963298c287643883209a2c3f642e6593379f97ab400c2a2e219ab647d"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
   pruneopts = "UT"
-  revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
-  version = "v1.1.0"
+  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
+  version = "v1.2.0"
 
 [[projects]]
   branch = "master"
-  digest = "1:a3183571d2f14aac485ac15fefdc704734ab9e6bc85111cbc91775c92087a019"
+  digest = "1:8c90219e8a1f5f7cad019b77697aaae2b236db5a1a46ae688e5ede406e109182"
   name = "github.com/google/go-github"
   packages = ["github"]
   pruneopts = "UT"
-  revision = "24b7e9764391dd6494cc65fe5bed5df43662873a"
+  revision = "68a79fc6a32bab9406083545e667a65ba67b0a3e"
 
 [[projects]]
-  branch = "master"
   digest = "1:a63cff6b5d8b95638bfe300385d93b2a6d9d687734b863da8e09dc834510a690"
   name = "github.com/google/go-querystring"
   packages = ["query"]
   pruneopts = "UT"
-  revision = "53e6ce116135b80d037921a7fdd5138cf32d7a8a"
+  revision = "44c6ddd0a2342c386950e880b658017258da92fc"
+  version = "v1.0.0"
 
 [[projects]]
   branch = "master"
-  digest = "1:c2767a9aae23b6e34ba541be7ff9dee2ca46dbac5c0ca135888bcd40f0051ad5"
+  digest = "1:3a9ac5355540b0847633f7d5177b32a7d79d422306561b1f88d89bde80571302"
   name = "github.com/kolide/kit"
   packages = ["env"]
   pruneopts = "UT"
-  revision = "45f7c9242522e5dd787e33bdec670fd8aec4ed60"
+  revision = "0c28f72eb2b04f8189b18f94f82361f6b3d5d299"
 
 [[projects]]
   branch = "master"
@@ -93,7 +93,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:befd7181c2f92c9f05abf17cd7e15538919f19cf7871d794cacc45a4fb99c135"
+  digest = "1:c40d65817cdd41fac9aa7af8bed56927bb2d6d47e4fea566a74880f5c2b1c41e"
   name = "github.com/stretchr/testify"
   packages = [
     "assert",
@@ -105,28 +105,28 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ce1f391e0e8c5e3c635dc2c712b037a2d0fd4241cc5648f23ca071565dd385f2"
+  digest = "1:d6b719875cf8091fbab38527d81d34e71f4521b9ee9ccfbd4a32cff2ac5af96e"
   name = "golang.org/x/net"
   packages = [
     "context",
     "context/ctxhttp",
   ]
   pruneopts = "UT"
-  revision = "49c15d80dfbc983ea25246ee959d970efe09ec09"
+  revision = "9b4f9f5ad5197c79fd623a3638e70d8b26cef344"
 
 [[projects]]
   branch = "master"
-  digest = "1:88f59611964f1c8800edc47686863dcef65dfec0605a1f69881c759f1d6e1a06"
+  digest = "1:1bce229fad01cbad9bd00e70ca32afff25ac2cea3dd710d50f88c967c1c3df65"
   name = "golang.org/x/oauth2"
   packages = [
     ".",
     "internal",
   ]
   pruneopts = "UT"
-  revision = "3d292e4d0cdc3a0113e6d207bb137145ef1de42f"
+  revision = "9dcd33a902f40452422c2367fefcb95b54f9f8f8"
 
 [[projects]]
-  digest = "1:1df608126759f99976e509eef1645a75a3bb5472d2fc57cf0664444d13915a23"
+  digest = "1:6247f76e55a1e1a5c19a81e2d4b4dff6730461eeb5bbb0a16dd4a8ec8637ee93"
   name = "google.golang.org/appengine"
   packages = [
     "internal",
@@ -138,8 +138,8 @@
     "urlfetch",
   ]
   pruneopts = "UT"
-  revision = "b1f26356af11148e710935ed1ac8a7f5702c7612"
-  version = "v1.1.0"
+  revision = "ae0ab99deb4dc413a2b4bd6c8bdd0eb67f1e4d06"
+  version = "v1.2.0"
 
 [solve-meta]
   analyzer-name = "dep"
