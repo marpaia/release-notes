@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/google/go-github/github"
@@ -132,13 +133,31 @@ func ListReleaseNotes(
 		return nil, err
 	}
 
+	dedupeCache := map[string]struct{}{}
 	notes := []*ReleaseNote{}
 	for _, commit := range commits {
+		if commit.GetAuthor().GetLogin() != "k8s-ci-robot" {
+			continue
+		}
+
 		note, err := ReleaseNoteFromCommit(commit, client, opts...)
 		if err != nil {
-			return nil, err
+			level.Error(logger).Log(
+				"err", err,
+				"msg", "error getting the release note from commit while listing release notes",
+				"sha", commit.GetSHA(),
+			)
+			continue
 		}
-		notes = append(notes, note)
+
+		if strings.TrimSpace(note.Text) == "NONE" {
+			continue
+		}
+
+		if _, ok := dedupeCache[note.Text]; !ok {
+			notes = append(notes, note)
+			dedupeCache[note.Text] = struct{}{}
+		}
 	}
 
 	return notes, nil
@@ -148,21 +167,32 @@ func ListReleaseNotes(
 // may contain the commit message, the PR description, etc.
 // This is generally the content inside the ```release-note ``` stanza.
 func NoteTextFromString(s string) (string, error) {
-	exp := regexp.MustCompile("```release-note\\r\\n(?P<note>.+)")
-	match := exp.FindStringSubmatch(s)
-	if len(match) == 0 {
-		return "", errors.New("no matches found when parsing note text from commit string")
+	exps := []*regexp.Regexp{
+		regexp.MustCompile("```release-note\\r\\n(?P<note>.+)"),
+		regexp.MustCompile("```dev-release-note\\r\\n(?P<note>.+)"),
+		regexp.MustCompile("```\\r\\n(?P<note>.+)\\r\\n```"),
+		regexp.MustCompile("```release-note\n(?P<note>.+)\n```"),
 	}
-	result := map[string]string{}
-	for i, name := range exp.SubexpNames() {
-		if i != 0 && name != "" {
-			result[name] = match[i]
+
+	for _, exp := range exps {
+		match := exp.FindStringSubmatch(s)
+		if len(match) == 0 {
+			continue
 		}
+		result := map[string]string{}
+		for i, name := range exp.SubexpNames() {
+			if i != 0 && name != "" {
+				result[name] = match[i]
+			}
+		}
+		note := strings.TrimRight(result["note"], "\r")
+		note = stripActionRequired(note)
+		note = stripStar(note)
+		return note, nil
 	}
-	note := strings.TrimRight(result["note"], "\r")
-	note = stripActionRequired(note)
-	note = stripStar(note)
-	return note, nil
+
+	spew.Dump(s)
+	return "", errors.New("no matches found when parsing note text from commit string")
 }
 
 // ReleaseNoteFromCommit produces a full contextualized release note given a
@@ -272,49 +302,81 @@ func ListCommitsWithNotes(
 	end string,
 	opts ...githubApiOption,
 ) ([]*github.RepositoryCommit, error) {
+	filteredCommits := []*github.RepositoryCommit{}
+
 	commits, err := ListCommits(client, start, end, opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	// exclusionFilters is a list of regular expressions that match commits that
-	// do NOT contain release notes. Notably, this is all of the variations of
-	// "release note none" that appear in the commit log.
-	exclusionFilters := []string{
-		"```release-note\\r\\nNONE",
-		"```release-note\\r\\n\\s+NONE",
-		"```release-note\\r\\nNONE",
-		"```release-note\\r\\n\"NONE\"",
-		"```release-note\\r\\nNone",
-		"```release-note\\r\\nnone",
-		"```release-note\\r\\nN/A",
-		"```release-note\\r\\n\\r\\n```",
-		"```release-note\\r\\n```",
+	for _, commit := range commits {
+		pr, err := PRFromCommit(client, commit, opts...)
+		if err != nil {
+			if err.Error() == "no matches found when parsing PR from commit" {
+				continue
+			}
+		}
+
+		// exclusionFilters is a list of regular expressions that match commits that
+		// do NOT contain release notes. Notably, this is all of the variations of
+		// "release note none" that appear in the commit log.
+		exclusionFilters := []string{
+			"```release-note\\r\\nNONE",
+			"```release-note\\r\\n\\s+NONE",
+			"```release-note\\r\\nNONE",
+			"```release-note\\r\\n\"NONE\"",
+			"```release-note\\r\\nNone",
+			"```release-note\\r\\nnone",
+			"```release-note\\r\\nN/A",
+			"```release-note\\r\\n\\r\\n```",
+			"```release-note\\r\\n```",
+			"/release-note-none",
+			"\\r\\n\\r\\nNONE",
+			"```NONE\\r\\n```",
+			"```release-note \\r\\nNONE\\r\\n```",
+			"NONE\\r\\n```",
+			"\\r\\nNone",
+			"\\r\\nNONE\\r\\n",
+		}
+
+		excluded := false
+
+		for _, filter := range exclusionFilters {
+			match, err := regexp.MatchString(filter, pr.GetBody())
+			if err != nil {
+				return nil, err
+			}
+			if match {
+				excluded = true
+				break
+			}
+		}
+
+		if excluded {
+			continue
+		}
+
+		// Similarly, now that the known not-release-notes are filtered out, we can
+		// use some patterns to find actual release notes.
+		inclusionFilters := []string{
+			"```release-note",
+			"release-note",
+			"```dev-release-note",
+			"Does this PR introduce a user-facing change?",
+		}
+
+		for _, filter := range inclusionFilters {
+			match, err := regexp.MatchString(filter, pr.GetBody())
+			if err != nil {
+				return nil, err
+			}
+			if match {
+				filteredCommits = append(filteredCommits, commit)
+			}
+		}
 	}
 
-	// We "filter" the commits and "exclude" any commits that match the patterns
-	// by setting the "include" parameter of this function to false
-	commits, err = filterCommits(client, logger, commits, exclusionFilters, false, opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	// Similarly, now that the known not-release-notes are filtered out, we can
-	// use some patterns to find actual release notes.
-	inclusionFilters := []string{
-		"```release-note\\r\\n",
-	}
-
-	// We "filter" the commits and only include commits that match the patterns
-	// by setting the "include" parameter of this function to true
-	commits, err = filterCommits(client, logger, commits, inclusionFilters, true, opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	// This final list contains all commits that contained a release notes stanza
-	// and were not some variation of "none
-	return commits, nil
+	return filteredCommits, nil
 }
 
 // PRFromCommit return an API Pull Request struct given a commit struct. This is
