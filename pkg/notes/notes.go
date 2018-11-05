@@ -21,7 +21,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/google/go-github/github"
@@ -191,7 +190,6 @@ func NoteTextFromString(s string) (string, error) {
 		return note, nil
 	}
 
-	spew.Dump(s)
 	return "", errors.New("no matches found when parsing note text from commit string")
 }
 
@@ -359,9 +357,7 @@ func ListCommitsWithNotes(
 		// Similarly, now that the known not-release-notes are filtered out, we can
 		// use some patterns to find actual release notes.
 		inclusionFilters := []string{
-			"```release-note",
 			"release-note",
-			"```dev-release-note",
 			"Does this PR introduce a user-facing change?",
 		}
 
