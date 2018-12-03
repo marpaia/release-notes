@@ -2,6 +2,7 @@ package notes
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 
@@ -100,5 +101,24 @@ func TestStripStar(t *testing.T) {
 
 	for _, note := range notes {
 		require.Equal(t, "The note text", stripStar(note))
+	}
+}
+
+func TestReleaseNoteParsing(t *testing.T) {
+	client := githubClient(t)
+	commitsWithNote := []string{
+		"5f750c593f94027896d683d32cf86cfbb2c8ce7e",
+		"26083c3d0934caef6f44978384b96a6315fff875",
+		"c585d13e36f4f8f7368ba35cef27fca271bc7083",
+		"1355e6b27713bbbdd3e5975e6fa815368f205c5d",
+	}
+	ctx := context.Background()
+
+	for _, sha := range commitsWithNote {
+		fmt.Println(sha)
+		commit, _, err := client.Repositories.GetCommit(ctx, "kubernetes", "kubernetes", sha)
+		require.NoError(t, err)
+		_, err = ReleaseNoteFromCommit(commit, client)
+		require.NoError(t, err)
 	}
 }
